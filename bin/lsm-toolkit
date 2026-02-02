@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+# Minimal dispatcher to test the project structure
+SET_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BASE_DIR="$(dirname "$SET_DIR")"
+
+MODULE="${1:-}"
+COMMAND="${2:-}"
+
+if [[ -z "$MODULE" || -z "$COMMAND" ]]; then
+    echo "Usage: $0 <module> <command>"
+    exit 1
+fi
+
+MODULE_PATH="${BASE_DIR}/modules/${MODULE}.sh"
+
+if [[ -f "$MODULE_PATH" ]]; then
+    source "$MODULE_PATH"
+    # Call the function: <module>_<command>
+    if declare -f "${MODULE}_${COMMAND}" > /dev/null; then
+        "${MODULE}_${COMMAND}"
+    else
+        echo "Error: Command '$COMMAND' not found in module '$MODULE'"
+        exit 1
+    fi
+else
+    echo "Error: Module '$MODULE' not found at $MODULE_PATH"
+    exit 1
+fi
