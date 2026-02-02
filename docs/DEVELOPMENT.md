@@ -53,8 +53,7 @@ linux-system-management-toolkit/
 │   ├── MODULE_TEMPLATE.md
 │   └── modules/         # Module-specific docs
 ├── examples/            # Usage examples
-└── .github/             # GitHub workflows
-    └── workflows/
+└── .github/             # GitHub issue and PR templates
 ```
 
 ## Development Workflow
