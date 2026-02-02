@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+
+# Linux System Management Toolkit (LSMT) - Primary Dispatcher
+# A professional-grade, modular CLI toolkit for Linux administration.
+# Best practices applied: Strict variable checking, robust pathing, and modular error handling.
+
+set -u # Prevent usage of unset variables
+
+# --- Configuration & Constants ---
+readonly VERSION="0.1.0"
+readonly APP_BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly LIB_DIR="${APP_BASE_DIR}/lib"
+
+# --- Output Formatting ---
+readonly BOLD='\033[1m'
+readonly RED='\033[0;31m'
+readonly GREEN='\033[0;32m'
+readonly NC='\033[0m' # No Color
+
+# --- Core Functions ---
+
+log_error() {
+    printf "${RED}${BOLD}Error:${NC} %s\n" "$1" >&2
+}
+
+log_usage() {
+    printf "${BOLD}Usage:${NC} lsmt [COMMAND] [OPTIONS]\n\n"
+    printf "A high-performance CLI toolkit for Linux system administration.\n\n"
+    printf "${BOLD}Primary Commands:${NC}\n"
+    printf "  health    System resource monitoring (CPU, RAM, Uptime)\n"
+    printf "  disk      Storage and filesystem management\n"
+    printf "  user      Security auditing and user management\n"
+    printf "  backup    Automated snapshot and data recovery\n"
+    printf "  help      Display this comprehensive help menu\n\n"
+    printf "${BOLD}Global Flags:${NC}\n"
+    printf "  --help       Show this help message\n"
+    printf "  --version    Display version information\n\n"
+    printf "${BOLD}Example:${NC} ./lsmt health --details\n"
+}
+
+# --- Main Dispatcher Logic ---
+
+main() {
+    local cmd="${1:-}"
+
+    # Handle global flags or empty input
+    case "${cmd}" in
+        --help|help)
+            log_usage
+            return 0
+            ;;
+        --version)
+            printf "lsmt version %s\n" "${VERSION}"
+            return 0
+            ;;
+        "")
+            log_error "No command provided."
+            log_usage
+            return 1
+            ;;
+    esac
+
+    # Validate subcommand existence
+    shift
+    local script_path="${LIB_DIR}/${cmd}.sh"
+
+    # 1. Check if the library directory exists
+    if [[ ! -d "${LIB_DIR}" ]]; then
+        log_error "Library directory missing: ${LIB_DIR}"
+        return 1
+    fi
+
+    # 2. Check if the script exists
+    if [[ ! -f "${script_path}" ]]; then
+        log_error "Unknown command '${cmd}'."
+        printf "Run './lsmt help' to see available modules.\n"
+        return 1
+    fi
+
+    # 3. Check for execution permissions and run
+    if [[ ! -x "${script_path}" ]]; then
+        log_error "Permission denied: ${script_path} is not executable."
+        printf "Try: chmod +x ${script_path}\n"
+        return 1
+    fi
+
+    # Execute the module, passing all remaining arguments
+    exec "${script_path}" "$@"
+}
+
+# Entry point
+main "$@"
