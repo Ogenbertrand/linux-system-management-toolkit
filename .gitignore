@@ -1,0 +1,28 @@
+# Logs
+logs/
+*.log
+
+# Backup files
+backups/
+*.bak
+*.backup
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Test output
+test-results/
+coverage/
