@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - System monitoring module with memory command
 - System Uptime reporting command to the System Module (LSMT-005)
 - Automated test suite `test_uptime.sh` for module validation
+- Implement System CPU Monitoring (LSMT-001) as a standalone module
+- Fixed pre-existing syntax error in `bin/lsm-toolkit` dispatcher
+- Fixed duplicate command execution bug in `bin/lsm-toolkit`
 
 ## [1.0.0] - YYYY-MM-DD
 

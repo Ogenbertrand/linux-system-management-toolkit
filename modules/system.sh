@@ -144,9 +144,6 @@ system_processes() {
     local head_cmd="head -n 20"
     
     case "$sort_by" in
-        cpu)
-            ps_cmd+=" --sort=-%cpu"
-            ;;
         memory|mem)
             ps_cmd+=" --sort=-%mem"
             ;;
@@ -154,7 +151,7 @@ system_processes() {
             # No sorting, default behavior
             ;;
         *)
-            echo "Error: Invalid sort option. Use 'cpu' or 'memory'." >&2
+            echo "Error: Invalid sort option. Use 'memory'." >&2
             return 1
             ;;
     esac
