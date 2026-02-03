@@ -28,6 +28,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - User auditing module
 - Backup automation module
 - Configuration system
+### Added
+- Backup module with timestamped archive creation and optional gzip compression
+- Comprehensive backup usage documentation
+- Argument passing fix in main script for module functions
+
+### Changed
 - Logging system
 
 [Unreleased]: https://github.com/Ogenbertrand/linux-system-management-toolkit/compare/v1.0.0...HEAD
