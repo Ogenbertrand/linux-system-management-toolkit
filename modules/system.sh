@@ -17,11 +17,8 @@ Usage: lsm system <command> [options]
 
 Commands:
   memory      - Display current memory and swap usage
-<<<<<<< HEAD
   processes   - Monitor top processes in real-time
-=======
   processes   - List all running processes
->>>>>>> 589a8e78f542374b746c34bbeb778ea40fb70b1b
   help        - Show this help message
 
 Options:
@@ -30,12 +27,9 @@ Options:
 Examples:
   lsm system memory
   lsm system processes
-<<<<<<< HEAD
   lsm system processes --refresh 2
   lsm system processes --count 15
-=======
   lsm system processes --sort cpu
->>>>>>> 589a8e78f542374b746c34bbeb778ea40fb70b1b
   lsm system help
 
 Process Monitoring Options:
