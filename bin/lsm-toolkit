@@ -113,9 +113,11 @@ fi
 
 if [[ -f "$MODULE_PATH" ]]; then
     source "$MODULE_PATH"
-    # Call the function: <module>_<command>
+    # Call the function: <module>_<command> with any remaining arguments
+    # Shift past module and command to get remaining args
+    shift 2
     if declare -f "${MODULE}_${COMMAND}" > /dev/null; then
-        "${MODULE}_${COMMAND}"
+        "${MODULE}_${COMMAND}" "$@"
     else
         echo "Error: Command '$COMMAND' not found in module '$MODULE'"
         exit 1
