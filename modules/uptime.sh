@@ -48,7 +48,6 @@ Uptime Module
 Usage: lsm uptime <command> [options]
 
 Commands:
-  uptime      - Display total system uptime and last reboot time
   list        - Display total system uptime and last reboot time
 
 Options:
