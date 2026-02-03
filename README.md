@@ -27,7 +27,7 @@ Quickly inspect the health and performance of the system.
 * CPU usage
 * Memory usage
 * Disk usage
-* System uptime
+* System uptime and last reboot history
 * Running processes
 
 **Underlying tools:** `top`, `htop`, `free`, `df`, `uptime`, `ps`
@@ -39,7 +39,7 @@ Quickly inspect the health and performance of the system.
 Manage and inspect storage devices safely.
 
 * List disks and partitions
-* Check disk usage and mount points
+* Report disk usage (total, used, available, use%) for mounted partitions
 * Monitor available storage space
 * Identify potential disk issues
 
@@ -85,7 +85,10 @@ linux-system-management-toolkit/
 │   ├── system.sh          # System monitoring functions
 │   ├── disk.sh            # Disk management functions
 │   ├── users.sh           # User auditing functions
+|   ├── uptime.sh
 │   └── backup.sh          # Backup automation functions
+├── tests/
+|   └──test_uptime.sh
 ├── config/
 │   └── toolkit.conf       # Configuration file
 ├── logs/
@@ -93,7 +96,9 @@ linux-system-management-toolkit/
 └── README.md
 ```
 
-Each module is independent and can be maintained or extended without affecting others.
+Each module is independent and can be maintained or extended without affecting others. More detailed information about each module can be found in the `docs/modules/` directory.
+
+- [Users Module](docs/modules/users.md)
 
 ---
 
@@ -129,8 +134,13 @@ lsm <module> <command>
 ```bash
 lsm system status
 lsm disk list
+
+lsm users list
+lsm users list [username]
+lsm disk usage
 lsm users logged-in
 lsm backup create /home/user
+lsm uptime list
 ```
 
 ---
