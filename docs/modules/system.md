@@ -200,10 +200,8 @@ The Process Monitoring feature provides real-time visualization of system proces
 
 
 ### Run script
-Note: make sure to use bash not zsh
 ```bash
-source system.sh
-system_processes --refresh 2 --count 10
+./bin/lsm-toolkit system processes
 ```
 
 ## Commands
