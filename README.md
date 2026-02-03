@@ -138,6 +138,30 @@ lsm backup create /home/user
 
 ---
 
+## Development and Testing
+
+### Running Tests
+
+We use a `Makefile` to manage development tasks. To run all tests:
+
+```bash
+make test
+```
+
+### Linting
+
+To check for shell script issues (requires `shellcheck`):
+
+```bash
+make lint
+```
+
+### Adding New Modules
+
+Refer to [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/MODULE_TEMPLATE.md](docs/MODULE_TEMPLATE.md) for guidelines on adding new features.
+
+---
+
 ## Configuration
 
 Configuration options are stored in:
