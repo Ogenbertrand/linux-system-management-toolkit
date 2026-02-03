@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial project structure
 - Documentation templates
 - Development guidelines
+- Memory usage reporting feature (LSMT-002)
+- System monitoring module with memory command
 
 ## [1.0.0] - YYYY-MM-DD
 
