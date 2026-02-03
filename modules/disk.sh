@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
 ################################################################################
-# Disk Module
+# Disk Module (LSMT-004)
 #
-# Description: Module for disk management, listing, and usage reporting.
-# Commands: list, usage, help
+# Description: Module for disk management, listing, usage reporting, and health.
+# Commands: list, usage, health, help
 ################################################################################
 
 set -euo pipefail
@@ -19,7 +19,68 @@ disk_load_config() {
     ALERT_DISK_THRESHOLD="${ALERT_DISK_THRESHOLD:-0}"
 }
 
-# Module help
+# --- Health Monitoring Logic (Your Original Code) ---
+
+disk_health() {
+    echo "--- Disk Health Monitoring ---"
+
+    # Detect physical disks
+    local disks
+    disks=$(lsblk -dno KNAME,TYPE | awk '$2 == "disk" {print "/dev/"$1}')
+
+    if [[ -z "$disks" ]]; then
+        echo "No physical disks found."
+        return 1
+    fi
+
+    # Ensure smartctl exists
+    if ! command -v smartctl >/dev/null 2>&1; then
+        echo "  Error: smartctl not found. Install smartmontools."
+        return 1
+    fi
+
+    for disk in $disks; do
+        local device_type=""
+        local disk_kind="sata"
+
+        echo "Checking SMART health for disk: $disk"
+
+        # Detect NVMe disks
+        if [[ "$disk" == /dev/nvme* ]]; then
+            device_type="-d nvme"
+            disk_kind="nvme"
+        fi
+
+        # Check SMART support
+        if ! sudo smartctl -i $device_type "$disk" >/dev/null 2>&1; then
+            echo "  SMART not supported for this disk."
+            continue
+        fi
+
+        # Overall health status
+        local health_status
+        health_status=$(sudo smartctl -H $device_type "$disk" \
+            | awk -F: '/SMART overall-health/ || /test result/ {print $2}' | xargs)
+
+        echo "  Overall Health: ${health_status:-UNKNOWN}"
+
+        # SMART attributes
+        echo "  SMART Attributes:"
+        if [[ "$disk_kind" == "nvme" ]]; then
+            sudo smartctl -a $device_type "$disk" | grep -E \
+            "Critical Warning|Temperature:|Available Spare|Percentage Used|Power On Hours|Data Units Written"
+        else
+            sudo smartctl -A "$disk" | grep -E \
+            "Power_On_Hours|Temperature_Celsius|Reallocated_Sector_Ct|Current_Pending_Sector|Offline_Uncorrectable"
+        fi
+        echo
+    done
+
+    echo "--- Monitoring Complete ---"
+}
+
+# --- Standard Toolkit Functions ---
+
 disk_help() {
     cat << EOF
 Disk Management Module (LSMT-004)
@@ -28,8 +89,8 @@ Usage: lsm disk <command> [options]
 
 Commands:
   list        - List all attached disks and partitions
-  usage       - Report disk space (total, used, available, use%) for mounted
-                partitions; optional threshold warnings via ALERT_DISK_THRESHOLD
+  usage       - Report disk space (total, used, available, use%)
+  health      - Check SMART health status of physical disks
   help        - Show this help message
 
 Options:
@@ -38,34 +99,23 @@ Options:
 Examples:
   lsm disk list
   lsm disk usage
-  lsm disk help
+  lsm disk health
 
 EOF
 }
 
-# List disks and partitions
 disk_list() {
     echo "Listing attached disks and partitions..."
     echo "------------------------------------------------------------"
-    
-    # Check if lsblk is installed
     if ! command -v lsblk &> /dev/null; then
         echo "Error: lsblk is not installed. Please install 'util-linux' package." >&2
         return 1
     fi
-
-    # Execute lsblk with specified columns
-    # NAME: device name
-    # SIZE: size of the device
-    # TYPE: device type (disk, part, rom, etc.)
-    # MOUNTPOINT: where the device is mounted
     lsblk -o NAME,SIZE,TYPE,MOUNTPOINT
 }
 
-# Report disk space usage for all mounted partitions
 disk_usage() {
     disk_load_config
-
     echo "Disk space usage (mounted partitions)"
     echo "====================================="
     printf "%-24s %10s %10s %10s %6s %s\n" "FILESYSTEM" "TOTAL" "USED" "AVAILABLE" "USE%" "MOUNTED ON"
@@ -81,27 +131,21 @@ disk_usage() {
     done < <(df -h -P | tail -n +2)
 
     if [[ -n "${warn_lines:-}" ]]; then
-        echo ""
-        echo "Threshold warnings (ALERT_DISK_THRESHOLD=${ALERT_DISK_THRESHOLD}%):"
-        printf "%b\n" "$warn_lines"
+        echo -e "\nThreshold warnings (ALERT_DISK_THRESHOLD=${ALERT_DISK_THRESHOLD}%):$warn_lines"
     fi
 }
 
-# Main module function (dispatcher compatibility)
+# --- Main Module Dispatcher ---
+
 disk_main() {
     local command="${1:-help}"
     shift || true
     
     case "$command" in
-        list)
-            disk_list "$@"
-            ;;
-        usage)
-            disk_usage "$@"
-            ;;
-        help|-h|--help)
-            disk_help
-            ;;
+        list)   disk_list "$@" ;;
+        usage)  disk_usage "$@" ;;
+        health) disk_health "$@" ;;
+        help|-h|--help) disk_help ;;
         *)
             echo "Unknown command: $command"
             disk_help
@@ -109,3 +153,8 @@ disk_main() {
             ;;
     esac
 }
+
+# Execute dispatcher if run directly
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    disk_main "$@"
+fi

@@ -38,3 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [Unreleased]: https://github.com/Ogenbertrand/linux-system-management-toolkit/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/Ogenbertrand/linux-system-management-toolkit/releases/tag/v1.0.0
+
+### Added
+- New `health` command to the `disk` module for monitoring SMART health status on SATA and NVMe drives.
+- Integration tests in `modules/test.sh` for the disk health module.
+- Technical documentation for the Disk Monitor module in `docs/DISK_MONITOR.md`.
