@@ -1,4 +1,4 @@
-.PHONY: help install lint clean
+.PHONY: help install lint clean test
 
 help:
 	@echo "Linux System Management Toolkit - Makefile"
@@ -6,8 +6,14 @@ help:
 	@echo "Available targets:"
 	@echo "  install    - Install the toolkit to /usr/local/bin"
 	@echo "  lint       - Run shellcheck on all scripts"
+	@echo "  test       - Run all tests in the tests/ directory"
 	@echo "  clean      - Remove logs and temporary files"
 	@echo "  uninstall  - Remove installed toolkit"
+
+test:
+	@echo "Running tests..."
+	@mkdir -p tests
+	@bash -c 'for test in tests/test_*.sh; do if [ -f "$$test" ]; then echo "Running $$test..."; bash "$$test"; fi; done'
 
 install:
 	@echo "Installing lsm-toolkit..."

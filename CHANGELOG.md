@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial project structure
 - Documentation templates
 - Development guidelines
+- Disk Listing Utility module (LSMT-003)
 
 ## [1.0.0] - YYYY-MM-DD
 
