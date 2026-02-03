@@ -146,7 +146,6 @@ system_memory() {
     _display_report "$mem_total" "$mem_used" "$mem_free" "$mem_avail" "$swap_total" "$swap_used" "$swap_free"
 }
 
-<<<<<<< HEAD
 # Clear screen and reset cursor
 _clear_screen() {
     printf '\033[2J\033[H'
@@ -338,7 +337,6 @@ system_processes() {
     trap - WINCH
     echo -e "\n${C_G}Process monitoring stopped.${C_RST}"
 }
-=======
 system_processes() {
     local sort_by=""
     if [[ "${1:-}" == "--sort" || "${1:-}" == "-s" ]]; then
@@ -373,4 +371,3 @@ system_processes() {
     # Display processes
     $ps_cmd | tail -n +2 | $head_cmd
 }
->>>>>>> 589a8e78f542374b746c34bbeb778ea40fb70b1b
