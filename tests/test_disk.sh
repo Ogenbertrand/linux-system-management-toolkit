@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 
-# Test for the Disk Listing Utility module
+# Tests for the Disk module (list, usage, help)
 # Follows the simple test structure from docs/DEVELOPMENT.md
 
-# Source the module
-MODULE_FILE="$(dirname "$0")/../modules/disk.sh"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BASE_DIR="$(dirname "$SCRIPT_DIR")"
+MODULE_FILE="${BASE_DIR}/modules/disk.sh"
+
+# So disk_load_config finds config when disk_usage runs
+export BASE_DIR
 
 if [[ -f "$MODULE_FILE" ]]; then
+    # shellcheck source=/dev/null
     source "$MODULE_FILE"
 else
     echo "✗ Error: Module file not found at $MODULE_FILE"
@@ -18,8 +23,8 @@ test_disk_help() {
     echo "Running test_disk_help..."
     local result
     result=$(disk_help)
-    
-    if echo "$result" | grep -q "Disk Management Module"; then
+
+    if echo "$result" | grep -q "Disk Management Module" && echo "$result" | grep -q "usage"; then
         echo "✓ test_disk_help passed"
         return 0
     else
@@ -42,14 +47,49 @@ test_disk_list_execution() {
     fi
 }
 
+# Test disk_usage
+test_disk_usage_output() {
+    echo "Running test_disk_usage_output..."
+    local result
+    result=$(disk_usage 2>&1) || true
+    if echo "$result" | grep -q "FILESYSTEM" && \
+       echo "$result" | grep -q "TOTAL" && \
+       echo "$result" | grep -q "USED" && \
+       echo "$result" | grep -q "AVAILABLE" && \
+       echo "$result" | grep -q "USE%"; then
+        echo "✓ test_disk_usage_output passed"
+        return 0
+    else
+        echo "✗ test_disk_usage_output failed (missing expected columns)"
+        return 1
+    fi
+}
+
+# Test disk_usage
+test_disk_usage_exit() {
+    echo "Running test_disk_usage_exit..."
+    local result
+    result=$(disk_usage 2>&1)
+    local code=$?
+    if [[ $code -eq 0 ]] && [[ "$result" =~ [0-9]+[GgMmKk]? ]]; then
+        echo "✓ test_disk_usage_exit passed"
+        return 0
+    else
+        echo "✗ test_disk_usage_exit failed (exit=$code or no size data)"
+        return 1
+    fi
+}
+
 # Run tests
 errors=0
 test_disk_help || ((errors++))
 test_disk_list_execution || ((errors++))
+test_disk_usage_output || ((errors++))
+test_disk_usage_exit || ((errors++))
 
 if [[ $errors -eq 0 ]]; then
     echo "---------------------------"
-    echo "All disk tests passed! ($errors errors)"
+    echo "All disk tests passed!"
     exit 0
 else
     echo "---------------------------"
