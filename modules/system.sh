@@ -17,10 +17,16 @@ Usage: lsm system <command> [options]
 
 Commands:
   memory      - Display current memory and swap usage
+  processes   - List all running processes
   help        - Show this help message
+
+Options:
+  -s, --sort  Sort processes by 'cpu' or 'memory'
 
 Examples:
   lsm system memory
+  lsm system processes
+  lsm system processes --sort cpu
   lsm system help
 
 EOF
@@ -123,4 +129,39 @@ system_memory() {
     [[ -z "$mem_avail" ]] && mem_avail="$mem_free"
     
     _display_report "$mem_total" "$mem_used" "$mem_free" "$mem_avail" "$swap_total" "$swap_used" "$swap_free"
+}
+
+system_processes() {
+    local sort_by=""
+    if [[ "${1:-}" == "--sort" || "${1:-}" == "-s" ]]; then
+        sort_by="$2"
+        shift 2
+    fi
+
+    echo -e "${C_B}${C_C}Running Processes${C_RST}\n${C_C}=================${C_RST}\n"
+
+    local ps_cmd="ps aux"
+    local head_cmd="head -n 20"
+    
+    case "$sort_by" in
+        cpu)
+            ps_cmd+=" --sort=-%cpu"
+            ;;
+        memory|mem)
+            ps_cmd+=" --sort=-%mem"
+            ;;
+        "")
+            # No sorting, default behavior
+            ;;
+        *)
+            echo "Error: Invalid sort option. Use 'cpu' or 'memory'." >&2
+            return 1
+            ;;
+    esac
+
+    # Display header
+    $ps_cmd | head -n 1
+
+    # Display processes
+    $ps_cmd | tail -n +2 | $head_cmd
 }

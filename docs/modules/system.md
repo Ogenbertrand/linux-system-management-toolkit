@@ -84,6 +84,34 @@ Display help information for the system module.
 lsm system help
 ```
 
+### processes
+
+List running processes and their resource usage.
+
+**Usage:**
+```bash
+lsm system processes [options]
+```
+
+**Options:**
+- `-s, --sort <key>`: Sort processes by `cpu` or `memory`.
+
+**Example Output:**
+```
+Running Processes
+=================
+USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root           1  0.0  0.0 169012 12544 ?        Ss   Jan26   5:51 /lib/systemd/systemd --system --deserialize 69 splash
+...
+```
+
+**Technical Details:**
+The `processes` command uses `ps aux` to get a list of all running processes. It then pipes the output to `head` to limit the number of displayed processes to 20.
+
+**Sorting:**
+- `--sort cpu`: Sorts the processes by CPU usage in descending order.
+- `--sort memory`: Sorts the processes by memory usage in descending order.
+
 ## Future Commands
 
 The following commands are planned for future releases:
@@ -91,7 +119,7 @@ The following commands are planned for future releases:
 - `cpu` - Display CPU usage and load averages
 - `disk` - Display disk usage across all mounted filesystems
 - `uptime` - Display system uptime and load
-- `processes` - Display running processes and resource usage
+- `processes` - Display running processes and resource usage 
 - `status` - Comprehensive system health overview
 
 ## Requirements
