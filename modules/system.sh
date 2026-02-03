@@ -330,8 +330,7 @@ system_processes() {
     # Cleanup
     trap - WINCH
     echo -e "\n${C_G}Process monitoring stopped.${C_RST}"
-}
-system_processes() {
+    
     local sort_by=""
     if [[ "${1:-}" == "--sort" || "${1:-}" == "-s" ]]; then
         sort_by="$2"
