@@ -134,7 +134,7 @@ lsm system status
 lsm disk list
 lsm users logged-in
 lsm backup create /home/user
-lsm sytem uptime
+lsm uptime list
 ```
 
 ---
