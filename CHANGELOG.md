@@ -11,7 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial project structure
 - Documentation templates
 - Development guidelines
+- Implement Active Users Listing (LSMT-006) in Users module
+- Enhanced CLI dispatcher to support command argument
 - Disk Listing Utility module (LSMT-003)
+- Disk usage check module (LSMT-004)
 - Memory usage reporting feature (LSMT-002)
 - System monitoring module with memory command
 

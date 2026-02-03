@@ -17,14 +17,25 @@ Usage: lsm system <command> [options]
 
 Commands:
   memory      - Display current memory and swap usage
+<<<<<<< HEAD
   processes   - Monitor top processes in real-time
+=======
+  processes   - List all running processes
+>>>>>>> 589a8e78f542374b746c34bbeb778ea40fb70b1b
   help        - Show this help message
+
+Options:
+  -s, --sort  Sort processes by 'cpu' or 'memory'
 
 Examples:
   lsm system memory
   lsm system processes
+<<<<<<< HEAD
   lsm system processes --refresh 2
   lsm system processes --count 15
+=======
+  lsm system processes --sort cpu
+>>>>>>> 589a8e78f542374b746c34bbeb778ea40fb70b1b
   lsm system help
 
 Process Monitoring Options:
@@ -135,6 +146,7 @@ system_memory() {
     _display_report "$mem_total" "$mem_used" "$mem_free" "$mem_avail" "$swap_total" "$swap_used" "$swap_free"
 }
 
+<<<<<<< HEAD
 # Clear screen and reset cursor
 _clear_screen() {
     printf '\033[2J\033[H'
@@ -326,3 +338,39 @@ system_processes() {
     trap - WINCH
     echo -e "\n${C_G}Process monitoring stopped.${C_RST}"
 }
+=======
+system_processes() {
+    local sort_by=""
+    if [[ "${1:-}" == "--sort" || "${1:-}" == "-s" ]]; then
+        sort_by="$2"
+        shift 2
+    fi
+
+    echo -e "${C_B}${C_C}Running Processes${C_RST}\n${C_C}=================${C_RST}\n"
+
+    local ps_cmd="ps aux"
+    local head_cmd="head -n 20"
+    
+    case "$sort_by" in
+        cpu)
+            ps_cmd+=" --sort=-%cpu"
+            ;;
+        memory|mem)
+            ps_cmd+=" --sort=-%mem"
+            ;;
+        "")
+            # No sorting, default behavior
+            ;;
+        *)
+            echo "Error: Invalid sort option. Use 'cpu' or 'memory'." >&2
+            return 1
+            ;;
+    esac
+
+    # Display header
+    $ps_cmd | head -n 1
+
+    # Display processes
+    $ps_cmd | tail -n +2 | $head_cmd
+}
+>>>>>>> 589a8e78f542374b746c34bbeb778ea40fb70b1b

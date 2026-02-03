@@ -11,21 +11,116 @@ done
 SET_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
 BASE_DIR="$(dirname "$SET_DIR")"
 
+# Color codes for formatted output
+C_RST='\033[0m'      # Reset
+C_B='\033[1m'        # Bold
+C_G='\033[0;32m'     # Green
+C_C='\033[0;36m'     # Cyan
+
+# Discover available modules by scanning modules/ directory
+_lsm_discover_modules() {
+    local modules_dir="${BASE_DIR}/modules"
+    for module_file in "${modules_dir}"/*.sh; do
+        [[ -f "$module_file" ]] || continue
+        basename "$module_file" .sh
+    done
+}
+
+# Extract metadata from module file header
+# Usage: _lsm_extract_metadata <module_name> <field>
+# Fields: Description, Commands
+_lsm_extract_metadata() {
+    local module="$1"
+    local field="$2"
+    local file="${BASE_DIR}/modules/${module}.sh"
+    [[ ! -f "$file" ]] && return 1
+    grep -m1 "^# ${field}:" "$file" 2>/dev/null | sed "s/^# ${field}:[[:space:]]*//"
+}
+
+# Display main help message
+_lsm_show_help() {
+    echo -e "${C_B}${C_C}Linux System Management Toolkit${C_RST}"
+    echo -e "${C_C}================================${C_RST}"
+    echo ""
+    echo -e "${C_B}Usage:${C_RST}"
+    echo "  lsm <module> <command> [options]"
+    echo "  lsm --help | -h | help"
+    echo "  lsm <module> --help"
+    echo ""
+    echo -e "${C_B}Available Modules:${C_RST}"
+
+    local module desc cmds
+    while IFS= read -r module; do
+        [[ -z "$module" ]] && continue
+        desc=$(_lsm_extract_metadata "$module" "Description")
+        cmds=$(_lsm_extract_metadata "$module" "Commands")
+
+        echo -e "  ${C_G}${module}${C_RST}"
+        if [[ -n "$desc" ]]; then
+            echo "    Description: $desc"
+        fi
+        if [[ -n "$cmds" ]]; then
+            echo "    Commands: $cmds"
+        fi
+        echo ""
+    done < <(_lsm_discover_modules)
+
+    echo -e "${C_B}Examples:${C_RST}"
+    echo "  lsm system memory     # Display memory usage"
+    echo "  lsm disk list         # List all disks"
+    echo "  lsm disk --help       # Show disk module help"
+    echo ""
+    echo -e "${C_B}Options:${C_RST}"
+    echo "  -h, --help            Show this help message"
+    echo "  <module> --help       Show module-specific help"
+}
+
+# Handle global help flags first
+case "${1:-}" in
+    -h|--help|help)
+        _lsm_show_help
+        exit 0
+        ;;
+esac
+
 MODULE="${1:-}"
 COMMAND="${2:-}"
+shift 2  # Remove first two arguments, leaving only additional args
 
 if [[ -z "$MODULE" || -z "$COMMAND" ]]; then
-    echo "Usage: $0 <module> <command>"
+    echo "Usage: $0 <module> <command> [args...]"
     exit 1
+# Show global help if no module provided
+if [[ -z "$MODULE" ]]; then
+    _lsm_show_help
+    exit 0
 fi
 
 MODULE_PATH="${BASE_DIR}/modules/${MODULE}.sh"
+
+# Handle module-level help: lsm <module> --help, lsm <module> -h, or lsm <module>
+if [[ "$COMMAND" == "--help" || "$COMMAND" == "-h" || -z "$COMMAND" ]]; then
+    if [[ -f "$MODULE_PATH" ]]; then
+        source "$MODULE_PATH"
+        if declare -f "${MODULE}_help" > /dev/null; then
+            "${MODULE}_help"
+            exit 0
+        else
+            echo "Error: Module '$MODULE' does not have a help function"
+            exit 1
+        fi
+    else
+        echo "Error: Module '$MODULE' not found"
+        exit 1
+    fi
+fi
 
 if [[ -f "$MODULE_PATH" ]]; then
     source "$MODULE_PATH"
     # Call the function: <module>_<command>
     if declare -f "${MODULE}_${COMMAND}" > /dev/null; then
-        "${MODULE}_${COMMAND}"
+        "${MODULE}_${COMMAND}" "$@"
+        "${MODULE}_${COMMAND}" "${@:3}"
     else
         echo "Error: Command '$COMMAND' not found in module '$MODULE'"
         exit 1
