@@ -129,6 +129,8 @@ lsm <module> <command>
 ```bash
 lsm system status
 lsm disk list
+lsm users logged-in
+lsm backup create /home/user
 ```
 
 ---
