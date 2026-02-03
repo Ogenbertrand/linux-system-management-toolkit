@@ -56,6 +56,19 @@ linux-system-management-toolkit/
 └── .github/             # GitHub issue and PR templates
 ```
 
+### Passing Arguments to Modules
+
+The main script `bin/lsm-toolkit` is responsible for calling the functions in the modules. As of version 1.1.0, the script passes all arguments after the module and command name to the module function.
+
+For example, when you run:
+```bash
+./bin/lsm-toolkit system processes --sort cpu
+```
+
+The `lsm-toolkit` script will call the `system_processes` function and pass `--sort cpu` as arguments to it.
+
+This allows you to create commands that accept options and arguments.
+
 ## Development Workflow
 
 ### 1. Create a Feature Branch
