@@ -6,9 +6,10 @@ BASE_DIR="$(dirname "$SET_DIR")"
 
 MODULE="${1:-}"
 COMMAND="${2:-}"
+shift 2  # Remove first two arguments, leaving only additional args
 
 if [[ -z "$MODULE" || -z "$COMMAND" ]]; then
-    echo "Usage: $0 <module> <command>"
+    echo "Usage: $0 <module> <command> [args...]"
     exit 1
 fi
 
@@ -18,7 +19,7 @@ if [[ -f "$MODULE_PATH" ]]; then
     source "$MODULE_PATH"
     # Call the function: <module>_<command>
     if declare -f "${MODULE}_${COMMAND}" > /dev/null; then
-        "${MODULE}_${COMMAND}"
+        "${MODULE}_${COMMAND}" "$@"
     else
         echo "Error: Command '$COMMAND' not found in module '$MODULE'"
         exit 1

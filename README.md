@@ -93,7 +93,9 @@ linux-system-management-toolkit/
 └── README.md
 ```
 
-Each module is independent and can be maintained or extended without affecting others.
+Each module is independent and can be maintained or extended without affecting others. More detailed information about each module can be found in the `docs/modules/` directory.
+
+- [Users Module](docs/modules/users.md)
 
 ---
 
@@ -129,7 +131,8 @@ lsm <module> <command>
 ```bash
 lsm system status
 lsm disk list
-lsm users logged-in
+lsm users list
+lsm users list [username]
 lsm backup create /home/user
 ```
 

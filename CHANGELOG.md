@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial project structure
 - Documentation templates
 - Development guidelines
+- Implement Active Users Listing (LSMT-006) in Users module
+- Enhanced CLI dispatcher to support command arguments
 
 ## [1.0.0] - YYYY-MM-DD
 
