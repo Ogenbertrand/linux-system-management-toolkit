@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Disk Listing Utility module (LSMT-003)
 - Memory usage reporting feature (LSMT-002)
 - System monitoring module with memory command
+- System Uptime reporting command to the System Module (LSMT-005)
+- Automated test suite `test_uptime.sh` for module validation
 
 ## [1.0.0] - YYYY-MM-DD
 

@@ -27,7 +27,7 @@ Quickly inspect the health and performance of the system.
 * CPU usage
 * Memory usage
 * Disk usage
-* System uptime
+* System uptime and last reboot history
 * Running processes
 
 **Underlying tools:** `top`, `htop`, `free`, `df`, `uptime`, `ps`
@@ -85,7 +85,10 @@ linux-system-management-toolkit/
 │   ├── system.sh          # System monitoring functions
 │   ├── disk.sh            # Disk management functions
 │   ├── users.sh           # User auditing functions
+|   ├── uptime.sh
 │   └── backup.sh          # Backup automation functions
+├── tests/
+|   └──test_uptime.sh
 ├── config/
 │   └── toolkit.conf       # Configuration file
 ├── logs/
@@ -131,6 +134,7 @@ lsm system status
 lsm disk list
 lsm users logged-in
 lsm backup create /home/user
+lsm sytem uptime
 ```
 
 ---
