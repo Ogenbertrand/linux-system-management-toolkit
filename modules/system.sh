@@ -17,7 +17,7 @@ Usage: lsm system <command> [options]
 
 Commands:
   memory      - Display current memory and swap usage
-  processes   - Monitor top processes in real-time
+  processes   - Monitor top processes in real-time(CPU%%, memory%%, command)
   processes   - List all running processes
   help        - Show this help message
 
@@ -330,7 +330,7 @@ system_processes() {
     # Cleanup
     trap - WINCH
     echo -e "\n${C_G}Process monitoring stopped.${C_RST}"
-    
+
     local sort_by=""
     if [[ "${1:-}" == "--sort" || "${1:-}" == "-s" ]]; then
         sort_by="$2"
