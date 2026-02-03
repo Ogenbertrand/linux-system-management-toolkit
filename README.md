@@ -39,7 +39,7 @@ Quickly inspect the health and performance of the system.
 Manage and inspect storage devices safely.
 
 * List disks and partitions
-* Check disk usage and mount points
+* Report disk usage (total, used, available, use%) for mounted partitions
 * Monitor available storage space
 * Identify potential disk issues
 
@@ -131,8 +131,11 @@ lsm <module> <command>
 ```bash
 lsm system status
 lsm disk list
+
 lsm users list
 lsm users list [username]
+lsm disk usage
+lsm users logged-in
 lsm backup create /home/user
 ```
 
