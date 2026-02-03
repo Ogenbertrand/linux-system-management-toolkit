@@ -49,6 +49,7 @@ Usage: lsm uptime <command> [options]
 
 Commands:
   list        - Display total system uptime and last reboot time
+  help        - Show this help message
 
 Options:
   -h, --help  Show this help message
