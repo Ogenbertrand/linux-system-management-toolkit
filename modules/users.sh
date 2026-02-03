@@ -50,6 +50,23 @@ users_list() {
     echo "-----------------------------------------------"
 }
 
+users_groups() {
+    echo "-----------------------------------------------"
+    echo "LSM Toolkit: User Group Membership Audit"
+    echo "-----------------------------------------------"
+    printf "%-20s | %s\n" "Username" "Groups"
+    echo "-----------------------------------------------"
+
+    while IFS=: read -r user _ _ _ _ _ _; do
+        groups=$(id -nG "$user" 2>/dev/null)
+        if [[ -n "$groups" ]]; then
+            printf "%-20s | %s\n" "$user" "$groups"
+        fi
+    done < /etc/passwd
+
+    echo "-----------------------------------------------"
+}
+
 users_help() {
     echo "LSM Toolkit: Users Module"
     echo ""
@@ -57,11 +74,13 @@ users_help() {
     echo ""
     echo "Commands:"
     echo "  list [username]    - List all active users or filter by username"
-    echo "  help              - Show this help message"
+    echo "  groups             - List all users and their group memberships"
+    echo "  help               - Show this help message"
     echo ""
     echo "Examples:"
     echo "  lsm-toolkit users list                    # List all active users"
     echo "  lsm-toolkit users list john              # Show only john's sessions"
+    echo "  lsm-toolkit users groups                  # Audit all user group memberships"
     echo ""
     echo "Output includes: username, terminal, login time, host"
 }
