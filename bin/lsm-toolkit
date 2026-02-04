@@ -87,9 +87,7 @@ MODULE="${1:-}"
 COMMAND="${2:-}"
 shift 2  # Remove first two arguments, leaving only additional args
 
-if [[ -z "$MODULE" || -z "$COMMAND" ]]; then
-    echo "Usage: $0 <module> <command> [args...]"
-    exit 1
+
 # Show global help if no module provided
 if [[ -z "$MODULE" ]]; then
     _lsm_show_help
@@ -119,10 +117,7 @@ if [[ -f "$MODULE_PATH" ]]; then
     source "$MODULE_PATH"
     # Call the function: <module>_<command>
     if declare -f "${MODULE}_${COMMAND}" > /dev/null; then
-        shift 2  # Remove MODULE and COMMAND from args
         "${MODULE}_${COMMAND}" "$@"
-        "${MODULE}_${COMMAND}" "$@"
-        "${MODULE}_${COMMAND}" "${@:3}"
     else
         echo "Error: Command '$COMMAND' not found in module '$MODULE'"
         exit 1
