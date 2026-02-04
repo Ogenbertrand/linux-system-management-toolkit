@@ -85,9 +85,11 @@ esac
 
 MODULE="${1:-}"
 COMMAND="${2:-}"
-shift 2  # Remove first two arguments, leaving only additional args
 
-
+if [[ -z "$MODULE" || -z "$COMMAND" ]]; then
+    echo "Usage: $0 <module> <command> [args...]"
+    exit 1
+fi
 # Show global help if no module provided
 if [[ -z "$MODULE" ]]; then
     _lsm_show_help
@@ -115,7 +117,9 @@ fi
 
 if [[ -f "$MODULE_PATH" ]]; then
     source "$MODULE_PATH"
-    # Call the function: <module>_<command>
+    # Call the function: <module>_<command> with any remaining arguments
+    # Shift past module and command to get remaining args
+    shift 2
     if declare -f "${MODULE}_${COMMAND}" > /dev/null; then
         "${MODULE}_${COMMAND}" "$@"
     else
