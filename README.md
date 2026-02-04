@@ -62,12 +62,42 @@ Audit and manage system users efficiently.
 
 ### 4. Backup Automation
 
-Automate simple and reliable backups.
+Automate simple and reliable backups with restore capabilities.
 
-* Create directory backups
-* Timestamped backup archives
-* Optional compression
-* Restore backups when needed
+* Create timestamped directory backups
+* Restore backups to original or custom locations
+* List all available backups
+* Configurable compression (gzip, bzip2, xz, or none)
+* Validate backup integrity before restoration
+
+**Examples:**
+
+```bash
+# Create a backup of a directory
+lsm backup create /home/user/documents
+
+# List all available backups
+lsm backup list
+
+# Restore a backup to its original location
+lsm backup restore backups/documents_20260203_120000.tar.gz
+
+# Restore to a custom directory
+lsm backup restore backups/documents_20260203_120000.tar.gz /tmp/restore
+
+# Get help for backup commands
+lsm backup help
+```
+
+**Configuration:**
+
+Edit `config/toolkit.conf` to customize backup behavior:
+
+```bash
+BACKUP_DIR="./backups"              # Where backups are stored
+BACKUP_COMPRESSION="gzip"           # Compression: gzip, bzip2, xz, or none
+BACKUP_RETENTION_DAYS=30           # Retention policy (future feature)
+```
 
 **Underlying tools:** `tar`, `rsync`, `cron`
 
