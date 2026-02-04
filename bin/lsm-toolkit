@@ -85,7 +85,6 @@ esac
 
 MODULE="${1:-}"
 COMMAND="${2:-}"
-shift 2  # Remove first two arguments, leaving only additional args
 
 if [[ -z "$MODULE" || -z "$COMMAND" ]]; then
     echo "Usage: $0 <module> <command> [args...]"
@@ -118,10 +117,10 @@ fi
 
 if [[ -f "$MODULE_PATH" ]]; then
     source "$MODULE_PATH"
-    # Call the function: <module>_<command>
+    # Call the function: <module>_<command> with any remaining arguments
+    # Shift past module and command to get remaining args
+    shift 2
     if declare -f "${MODULE}_${COMMAND}" > /dev/null; then
-        shift 2  # Remove MODULE and COMMAND from args
-        "${MODULE}_${COMMAND}" "$@"
         "${MODULE}_${COMMAND}" "$@"
     else
         echo "Error: Command '$COMMAND' not found in module '$MODULE'"

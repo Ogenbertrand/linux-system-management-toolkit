@@ -17,6 +17,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Disk usage check module (LSMT-004)
 - Memory usage reporting feature (LSMT-002)
 - System monitoring module with memory command
+- Backup automation module with create, restore, and list commands (LSMT-010)
+- Comprehensive backup module documentation in docs/modules/backup.md
+- Automated test suite for backup module
+
+### Changed
+- Updated main CLI to pass command arguments to module functions
+- Enhanced README.md with detailed backup usage examples and configuration
+
+### Fixed
+- Fixed CLI argument passing bug that prevented modules from receiving parameters
 - System Uptime reporting command to the System Module (LSMT-005)
 - Automated test suite `test_uptime.sh` for module validation
 - Implement System CPU Monitoring (LSMT-001) as a standalone module
