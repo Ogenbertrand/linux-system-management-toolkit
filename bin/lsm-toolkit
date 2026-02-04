@@ -121,8 +121,6 @@ if [[ -f "$MODULE_PATH" ]]; then
     source "$MODULE_PATH"
     # Call the function: <module>_<command>
     if declare -f "${MODULE}_${COMMAND}" > /dev/null; then
-        shift 2  # Remove MODULE and COMMAND from args
-        "${MODULE}_${COMMAND}" "$@"
         "${MODULE}_${COMMAND}" "$@"
     else
         echo "Error: Command '$COMMAND' not found in module '$MODULE'"
