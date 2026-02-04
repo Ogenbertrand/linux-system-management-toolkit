@@ -91,7 +91,6 @@ if [[ -z "$MODULE" || -z "$COMMAND" ]]; then
     echo "Usage: $0 <module> <command> [args...]"
     exit 1
 fi
-
 # Show global help if no module provided
 if [[ -z "$MODULE" ]]; then
     _lsm_show_help
