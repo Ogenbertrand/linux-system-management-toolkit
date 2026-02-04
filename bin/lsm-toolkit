@@ -207,19 +207,6 @@ if [[ -f "$MODULE_PATH" ]]; then
     # Shift past module and command to get remaining args
     shift 2
     if declare -f "${MODULE}_${COMMAND}" > /dev/null; then
-        # Log execution
-        _lsm_log "INFO" "Executing: $COMMAND $*"
-        
-        "${MODULE}_${COMMAND}" "$@"
-        exit_code=$?
-        
-        if [[ $exit_code -eq 0 ]]; then
-             _lsm_log "INFO" "Finished: $COMMAND (Success)"
-        else
-             _lsm_log "ERROR" "Finished: $COMMAND (Failed with exit code $exit_code)"
-        fi
-        exit $exit_code
-
         "${MODULE}_${COMMAND}" "$@"
     else
         _lsm_log "ERROR" "Command '$COMMAND' not found in module '$MODULE'"

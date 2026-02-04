@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Backup automation module with create, restore, and list commands (LSMT-010)
 - Comprehensive backup module documentation in docs/modules/backup.md
 - Automated test suite for backup module
+- Implement users login history feature
 
 ### Changed
 - Updated main CLI to pass command arguments to module functions
