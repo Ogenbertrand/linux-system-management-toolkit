@@ -87,73 +87,96 @@ users_history() {
 
     local printed=0
 
-    echo "$output" | while IFS= read -r line; do
+    # Use process substitution to avoid subshell for printed variable
+    while IFS= read -r line; do
         [[ -z "$line" ]] && continue
         if echo "$line" | grep -qE '^(reboot|shutdown|system boot|wtmp)'; then
             continue
         fi
 
-        # The awk parsing block (your existing one) – but improve alignment a bit
+        # Parse the line with awk
         local parsed
-        parsed=$(echo "$line" | awk '
-                {
-                    username = $1
-                    tty      = $2
-                    host     = (NF >= 3 && $3 != tty) ? $3 : "-"
+        parsed=$(echo "$line" | awk '{
+            # Parse username and tty
+            username = $1
+            tty = $2
 
-                    # Build login time: start from field 4, collect until we see "-" "still" "down" etc.
-                    login = ""
-                    i = 4
-                    while (i <= NF) {
-                        token = $i
-                        if (token == "-" || token == "still" || token == "down" || token == "crash" || token == "gone") break
-                        login = (login == "" ? "" : login " ") token
-                        i++
-                    }
+            # Parse host (field 3 might be host or sometimes empty)
+            host = ""
+            if (NF >= 3) {
+                # Host field should not look like a tty or IP address pattern
+                if ($3 != tty && $3 !~ /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/) {
+                    host = $3
+                }
+            }
+            if (host == "") host = "-"
 
-                    status = ""
-                    logout = ""
-                    duration = ""
+            # Find where login time starts (usually field 4)
+            login_start = 4
+            # If we have a host in field 3, login starts at 4, otherwise at 5
+            if (host != "-") login_start = 5
 
-                    if (token == "still") {
-                        status = "still logged in"
-                    } else if (token == "down") {
-                        status = "down / reboot"
-                    } else if (token == "crash") {
-                        status = "crash / unclean"
-                    } else if (token == "-") {
-                        i++
-                        logout_start = i
-                        while (i <= NF && $i !~ /^\(/) {
-                            i++
-                        }
-                        # Collect logout time fields
-                        for (j = logout_start; j < i; j++) {
-                            logout = (logout == "" ? "" : logout " ") $j
-                        }
-                        # Duration is usually the last field
-                        if (i <= NF && $i ~ /^\(/) {
-                            duration = substr($i, 2, length($i)-2)  # remove ( )
-                        }
-                    } else {
-                        status = "(unknown)"
-                    }
+            # Build login time string
+            login = ""
+            i = login_start
+            while (i <= NF) {
+                # Stop when we hit status indicators or logout separator
+                if ($i == "-" || $i == "still" || $i == "down" || $i == "crash" || $i == "gone") {
+                    break
+                }
+                login = login (login == "" ? "" : " ") $i
+                i++
+            }
 
-                    # Fallback: if duration not set and last field looks like duration
-                    if (duration == "" && $NF ~ /^\(/) {
-                        duration = substr($NF, 2, length($NF)-2)
-                    }
+            # Determine status or parse logout time
+            status = ""
+            logout = ""
+            duration = ""
 
-                    print username "|" tty "|" host "|" login "|" (logout ? logout : status) "|" duration
-                }')
+            if ($i == "still") {
+                status = "still logged in"
+                # Duration might be in next field or field after
+                if (i+1 <= NF && $(i+1) ~ /^\(/) {
+                    duration = substr($(i+1), 2, length($(i+1))-2)
+                }
+            } else if ($i == "down" || $i == "crash" || $i == "gone") {
+                status = $i
+                if (i+1 <= NF && $(i+1) ~ /^\(/) {
+                    duration = substr($(i+1), 2, length($(i+1))-2)
+                }
+            } else if ($i == "-") {
+                # Parse logout time
+                i++
+                logout_start = i
+                while (i <= NF && $i !~ /^\(/) {
+                    i++
+                }
+                # Collect logout time
+                for (j = logout_start; j < i; j++) {
+                    logout = logout (logout == "" ? "" : " ") $j
+                }
+                # Parse duration
+                if (i <= NF && $i ~ /^\(/) {
+                    duration = substr($i, 2, length($i)-2)
+                }
+            }
+
+            # Output pipe-separated fields
+            print username "|" tty "|" host "|" login "|" (logout ? logout : status) "|" duration
+        }')
 
         if [[ -n "$parsed" ]]; then
-            # shellcheck disable=SC2046
-            printf "%-12s | %-8s | %-18s | %-28s | %-28s | %s\n" $(echo "$parsed" | tr '|' ' ')
+            # Use printf with proper field splitting
+            IFS='|' read -r username tty host login status duration <<< "$parsed"
+            printf "%-12s | %-8s | %-18s | %-28s | %-28s | %s\n" \
+                "$username" "$tty" "$host" "$login" "$status" "$duration"
+
             ((printed++))
-            (( printed >= max_count )) && break
+            if (( printed >= max_count )); then
+                break
+            fi
         fi
-    done
+    done < <(echo "$output")
 
     echo "-----------------------------------------------"
     echo "Shown $printed most recent valid entries"
