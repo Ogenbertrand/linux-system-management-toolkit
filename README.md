@@ -171,6 +171,8 @@ lsm disk usage
 lsm users logged-in
 lsm backup create /home/user
 lsm uptime list
+lsm users history
+lsm users history [username] [count]
 ```
 
 ---
