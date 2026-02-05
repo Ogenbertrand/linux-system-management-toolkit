@@ -17,92 +17,6 @@ C_B='\033[1m'        # Bold
 C_G='\033[0;32m'     # Green
 C_C='\033[0;36m'     # Cyan
 
-# --- LOGGING CONFIGURATION ---
-CONFIG_FILE="${BASE_DIR}/config/toolkit.conf"
-if [[ -f "$CONFIG_FILE" ]]; then
-    source "$CONFIG_FILE"
-fi
-
-# Set defaults
-LOG_DIR="${LOG_DIR:-${BASE_DIR}/logs}"
-LOG_FILE="${LOG_FILE:-${LOG_DIR}/toolkit.log}"
-LOG_LEVEL="${LOG_LEVEL:-INFO}"
-LOG_RETENTION_DAYS="${LOG_RETENTION_DAYS:-7}"
-LOG_ENABLED_MODULES="${LOG_ENABLED_MODULES:-all}"
-
-# Ensure log directory exists
-if [[ ! -d "$LOG_DIR" ]]; then
-    mkdir -p "$LOG_DIR"
-fi
-
-# Logging function
-_lsm_log() {
-    local level="$1"
-    local message="$2"
-    local module="${MODULE:-core}"
-
-    # Check if logging is enabled for this module
-    if [[ "$LOG_ENABLED_MODULES" != "all" && "$LOG_ENABLED_MODULES" != *"$module"* ]]; then
-        return
-    fi
-
-    # Check log level priority
-    local level_priority
-    local config_priority
-    
-    case "$level" in
-        ERROR) level_priority=1 ;;
-        WARN)  level_priority=2 ;;
-        INFO)  level_priority=3 ;;
-        DEBUG) level_priority=4 ;;
-        *)     level_priority=3 ;;
-    esac
-
-    case "$LOG_LEVEL" in
-        ERROR) config_priority=1 ;;
-        WARN)  config_priority=2 ;;
-        INFO)  config_priority=3 ;;
-        DEBUG) config_priority=4 ;;
-        *)     config_priority=3 ;;
-    esac
-
-    if [[ $level_priority -gt $config_priority ]]; then
-        return
-    fi
-
-    local timestamp=$(date "+%Y-%m-%d %H:%M:%S")
-    echo "[$timestamp] [$level] [$module] $message" >> "$LOG_FILE"
-}
-
-# Log rotation
-_lsm_rotate_logs() {
-    [[ ! -d "$LOG_DIR" ]] && return
-
-    # Archive current log if it's from a previous day
-    if [[ -f "$LOG_FILE" ]]; then
-        local log_date
-        log_date=$(date -r "$LOG_FILE" "+%Y-%m-%d" 2>/dev/null)
-        local current_date=$(date "+%Y-%m-%d")
-        
-        if [[ -n "$log_date" && "$log_date" != "$current_date" ]]; then
-            local archive_file="${LOG_FILE}.${log_date}"
-            mv "$LOG_FILE" "$archive_file"
-            if command -v gzip >/dev/null 2>&1; then
-                gzip "$archive_file"
-            fi
-        fi
-    fi
-
-    # Delete logs older than retention days
-    local log_filename=$(basename "$LOG_FILE")
-    find "$LOG_DIR" -name "${log_filename}.*" -type f -mtime +"$LOG_RETENTION_DAYS" -delete 2>/dev/null
-}
-
-# Perform log rotation on startup
-_lsm_rotate_logs
-
-# --- END LOGGING CONFIGURATION ---
-
 # Discover available modules by scanning modules/ directory
 _lsm_discover_modules() {
     local modules_dir="${BASE_DIR}/modules"
@@ -123,15 +37,111 @@ _lsm_extract_metadata() {
     grep -m1 "^# ${field}:" "$file" 2>/dev/null | sed "s/^# ${field}:[[:space:]]*//"
 }
 
+# Interactive Menu System
+_lsm_interactive_menu() {
+    local options=()
+    local modules=()
+    local i=1
+
+    echo -e "${C_B}${C_C}Welcome to the Linux System Management Toolkit (LSM)${C_RST}"
+    echo "------------------------------------------------"
+
+    # Populate module list
+    while IFS= read -r module; do
+        [[ -z "$module" ]] && continue
+        modules+=("$module")
+        local desc=$(_lsm_extract_metadata "$module" "Description")
+        options+=("$i) $module - ${desc:-No description}")
+        ((i++))
+    done < <(_lsm_discover_modules)
+
+    if [[ ${#modules[@]} -eq 0 ]]; then
+        echo "No modules found in modules/"
+        exit 1
+    fi
+
+    echo "Please select a module to manage:"
+    for opt in "${options[@]}"; do
+        echo "  $opt"
+    done
+    echo "  q) Quit"
+    echo ""
+
+    local selection
+    read -p "Enter your choice [1-${#modules[@]} or q]: " selection
+
+    if [[ "$selection" == "q" ]]; then
+        echo "Goodbye!"
+        exit 0
+    fi
+
+    if [[ ! "$selection" =~ ^[0-9]+$ ]] || (( selection < 1 || selection > ${#modules[@]} )); then
+        echo "Invalid selection."
+        exit 1
+    fi
+
+    local selected_module="${modules[$((selection-1))]}"
+    _lsm_module_menu "$selected_module"
+}
+
+# Sub-menu for a specific module
+_lsm_module_menu() {
+    local module="$1"
+    local module_path="${BASE_DIR}/modules/${module}.sh"
+
+    if [[ ! -f "$module_path" ]]; then
+        echo "Error: Module file not found."
+        exit 1
+    fi
+
+    # Source the module to get its functions
+    source "$module_path"
+
+    echo ""
+    echo -e "${C_B}Module: ${C_G}${module}${C_RST}"
+    echo "Available commands:"
+
+    # We need to find commands. A simple convention or reading "Commands" metadata is good.
+    # But for a robust menu, we might iterate over functions starting with "${module}_"
+    # However, parsing metadata is safer if we want to show descriptions.
+    # For now, let's use the regex approach to find exported functions to list them dynamically
+    # OR we can just rely on the user knowing what commands or the "Commands" metadata line if it's strict.
+    
+    # Let's try to extract commands from the metadata first as it is user-friendly
+    local cmds_meta=$(_lsm_extract_metadata "$module" "Commands")
+    
+    # Just list them from the metadata string for display
+    echo "  $cmds_meta"
+    
+    echo ""
+    read -p "Enter command to run (or 'b' to back, 'q' to quit): " cmd_selection
+
+    if [[ "$cmd_selection" == "q" ]]; then
+         exit 0
+    elif [[ "$cmd_selection" == "b" ]]; then
+         _lsm_interactive_menu
+         return
+    fi
+    
+    # Execute
+    echo ""
+    $0 "$module" "$cmd_selection"
+    
+    echo ""
+    read -p "Press Enter to continue..."
+    _lsm_interactive_menu
+}
+
 # Display main help message
 _lsm_show_help() {
     echo -e "${C_B}${C_C}Linux System Management Toolkit${C_RST}"
     echo -e "${C_C}================================${C_RST}"
     echo ""
     echo -e "${C_B}Usage:${C_RST}"
-    echo "  lsm <module> <command> [options]"
-    echo "  lsm --help | -h | help"
-    echo "  lsm <module> --help"
+    echo "  lsm                                     # Launch interactive menu"
+    echo "  lsm <module> <command> [options]        # Run specific command"
+    echo "  lsm --help | -h | help                  # Show this help"
+    echo "  lsm <module> --help                     # Show module-specific help"
     echo ""
     echo -e "${C_B}Available Modules:${C_RST}"
 
@@ -152,6 +162,7 @@ _lsm_show_help() {
     done < <(_lsm_discover_modules)
 
     echo -e "${C_B}Examples:${C_RST}"
+    echo "  lsm                   # Start interactive mode"
     echo "  lsm system memory     # Display memory usage"
     echo "  lsm disk list         # List all disks"
     echo "  lsm disk --help       # Show disk module help"
@@ -169,14 +180,16 @@ case "${1:-}" in
         ;;
 esac
 
+# Interactive mode if no arguments
+if [[ -z "$1" ]]; then
+    _lsm_interactive_menu
+    exit 0
+fi
+
 MODULE="${1:-}"
 COMMAND="${2:-}"
+shift 2  # Remove first two arguments, leaving only additional args
 
-if [[ -z "$MODULE" || -z "$COMMAND" ]]; then
-    echo "Usage: $0 <module> <command> [args...]"
-    exit 1
-fi
-# Show global help if no module provided
 if [[ -z "$MODULE" ]]; then
     _lsm_show_help
     exit 0
@@ -203,18 +216,14 @@ fi
 
 if [[ -f "$MODULE_PATH" ]]; then
     source "$MODULE_PATH"
-    # Call the function: <module>_<command> with any remaining arguments
-    # Shift past module and command to get remaining args
-    shift 2
+    # Call the function: <module>_<command>
     if declare -f "${MODULE}_${COMMAND}" > /dev/null; then
         "${MODULE}_${COMMAND}" "$@"
     else
-        _lsm_log "ERROR" "Command '$COMMAND' not found in module '$MODULE'"
         echo "Error: Command '$COMMAND' not found in module '$MODULE'"
         exit 1
     fi
 else
-    _lsm_log "ERROR" "Module '$MODULE' not found at $MODULE_PATH"
     echo "Error: Module '$MODULE' not found at $MODULE_PATH"
     exit 1
 fi
