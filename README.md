@@ -68,6 +68,7 @@ Automate simple and reliable backups with restore capabilities.
 * Restore backups to original or custom locations
 * List all available backups
 * Configurable compression (gzip, bzip2, xz, or none)
+* Incremental snapshots (full restore points via hardlinks)
 * Validate backup integrity before restoration
 
 **Examples:**
@@ -75,6 +76,9 @@ Automate simple and reliable backups with restore capabilities.
 ```bash
 # Create a backup of a directory
 lsm backup create /home/user/documents
+
+# Create an incremental snapshot (full restore point)
+lsm backup create --incremental /home/user/documents
 
 # List all available backups
 lsm backup list
@@ -88,6 +92,10 @@ lsm backup restore backups/documents_20260203_120000.tar.gz /tmp/restore
 # Get help for backup commands
 lsm backup help
 ```
+
+More details:
+
+- [Backup usage guide](docs/BACKUP_USAGE.md)
 
 **Configuration:**
 
