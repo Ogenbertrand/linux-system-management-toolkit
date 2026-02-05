@@ -67,7 +67,10 @@ assert() {
 test_backup_help() {
     echo ""
     echo "Test: Backup help command"
-    local output=$("$LSM_TOOLKIT" backup help 2>&1)
+    local output
+    output=$("$LSM_TOOLKIT" backup help 2>&1)
+    local exit_code=$?
+    assert "Help command succeeds" '[[ $exit_code -eq 0 ]]'
     assert "Help command returns content" '[[ -n "$output" ]]'
     assert "Help contains usage information" '[[ "$output" =~ "Usage:" ]]'
     assert "Help mentions create command" '[[ "$output" =~ "create" ]]'
@@ -81,12 +84,98 @@ test_backup_create_valid() {
     setup
     
     cd "$TEST_DIR" || exit 1
-    local output=$("$LSM_TOOLKIT" backup create "$TEST_SOURCE" 2>&1)
+    local output
+    output=$("$LSM_TOOLKIT" backup create "$TEST_SOURCE" 2>&1)
+    local exit_code=$?
     
-    assert "Create command succeeds" '[[ $? -eq 0 ]]'
+    assert "Create command succeeds" '[[ $exit_code -eq 0 ]]'
     assert "Backup file is created" '[[ -n "$(find "$TEST_BACKUP_DIR" -name "source_*.tar.gz" 2>/dev/null)" ]]'
     assert "Output contains success message" '[[ "$output" =~ "successfully" ]]'
     
+    teardown
+}
+
+# Test: incremental backup creates snapshot
+test_backup_create_incremental() {
+    echo ""
+    echo "Test: Backup create incremental snapshot"
+    setup
+
+    cd "$TEST_DIR" || exit 1
+    local output
+    output=$("$LSM_TOOLKIT" backup create --incremental "$TEST_SOURCE" 2>&1)
+    local exit_code=$?
+
+    assert "Incremental create command succeeds" '[[ $exit_code -eq 0 ]]'
+    assert "Incremental series directory is created" '[[ -d "${TEST_BACKUP_DIR}/source.lsm" ]]'
+    assert "Latest symlink exists" '[[ -e "${TEST_BACKUP_DIR}/source.lsm/snapshots/latest" ]]'
+
+    local latest_snapshot
+    latest_snapshot=$(readlink -f "${TEST_BACKUP_DIR}/source.lsm/snapshots/latest")
+    assert "Latest snapshot directory exists" '[[ -d "$latest_snapshot" ]]'
+    assert "Snapshot contains backed up files" '[[ -f "${latest_snapshot}/source/file1.txt" ]]'
+    assert "Output contains success message" '[[ "$output" =~ "successfully" ]]'
+
+    teardown
+}
+
+# Test: incremental backup uses hardlinks for unchanged files
+test_backup_incremental_hardlinks() {
+    echo ""
+    echo "Test: Incremental backup hardlinks unchanged files"
+    setup
+
+    cd "$TEST_DIR" || exit 1
+
+    "$LSM_TOOLKIT" backup create --incremental "$TEST_SOURCE" > /dev/null 2>&1
+    echo "Modified" > "${TEST_SOURCE}/file2.txt"
+    "$LSM_TOOLKIT" backup create --incremental "$TEST_SOURCE" > /dev/null 2>&1
+
+    local snapshots_dir="${TEST_BACKUP_DIR}/source.lsm/snapshots"
+    local first_snapshot
+    local second_snapshot
+    first_snapshot=$(find "$snapshots_dir" -maxdepth 1 -mindepth 1 -type d ! -name latest | sort | head -n 1)
+    second_snapshot=$(find "$snapshots_dir" -maxdepth 1 -mindepth 1 -type d ! -name latest | sort | tail -n 1)
+
+    local inode_first
+    local inode_second
+    inode_first=$(stat -c %i "${first_snapshot}/source/file1.txt")
+    inode_second=$(stat -c %i "${second_snapshot}/source/file1.txt")
+
+    assert "Unchanged file is hardlinked across snapshots" '[[ "$inode_first" == "$inode_second" ]]'
+
+    local inode_mod_first
+    local inode_mod_second
+    inode_mod_first=$(stat -c %i "${first_snapshot}/source/file2.txt")
+    inode_mod_second=$(stat -c %i "${second_snapshot}/source/file2.txt")
+    assert "Modified file is not hardlinked" '[[ "$inode_mod_first" != "$inode_mod_second" ]]'
+
+    teardown
+}
+
+# Test: restore from incremental snapshot directory
+test_backup_restore_snapshot() {
+    echo ""
+    echo "Test: Backup restore from snapshot directory"
+    setup
+
+    cd "$TEST_DIR" || exit 1
+
+    "$LSM_TOOLKIT" backup create --incremental "$TEST_SOURCE" > /dev/null 2>&1
+    local latest_snapshot
+    latest_snapshot=$(readlink -f "${TEST_BACKUP_DIR}/source.lsm/snapshots/latest")
+
+    rm -rf "$TEST_SOURCE"
+
+    local output
+    output=$("$LSM_TOOLKIT" backup restore "$latest_snapshot" "$TEST_DIR" 2>&1)
+    local exit_code=$?
+
+    assert "Restore from snapshot succeeds" '[[ $exit_code -eq 0 ]]'
+    assert "Source directory is restored" '[[ -d "$TEST_SOURCE" ]]'
+    assert "File1 is restored" '[[ -f "${TEST_SOURCE}/file1.txt" ]]'
+    assert "Output contains success message" '[[ "$output" =~ "successfully" ]]'
+
     teardown
 }
 
@@ -97,7 +186,8 @@ test_backup_create_invalid() {
     setup
     
     cd "$TEST_DIR" || exit 1
-    local output=$("$LSM_TOOLKIT" backup create "/nonexistent/path" 2>&1)
+    local output
+    output=$("$LSM_TOOLKIT" backup create "/nonexistent/path" 2>&1)
     local exit_code=$?
     
     assert "Create command fails with non-existent path" '[[ $exit_code -ne 0 ]]'
@@ -116,9 +206,11 @@ test_backup_list() {
     # Create a backup first
     "$LSM_TOOLKIT" backup create "$TEST_SOURCE" > /dev/null 2>&1
     
-    local output=$("$LSM_TOOLKIT" backup list 2>&1)
+    local output
+    output=$("$LSM_TOOLKIT" backup list 2>&1)
+    local exit_code=$?
     
-    assert "List command succeeds" '[[ $? -eq 0 ]]'
+    assert "List command succeeds" '[[ $exit_code -eq 0 ]]'
     assert "List shows backup files" '[[ "$output" =~ "source_" ]]'
     
     teardown
@@ -142,9 +234,11 @@ test_backup_restore_valid() {
     rm -rf "$TEST_SOURCE"
     
     # Restore the backup
-    local output=$("$LSM_TOOLKIT" backup restore "$backup_file" "$TEST_DIR" 2>&1)
+    local output
+    output=$("$LSM_TOOLKIT" backup restore "$backup_file" "$TEST_DIR" 2>&1)
+    local exit_code=$?
     
-    assert "Restore command succeeds" '[[ $? -eq 0 ]]'
+    assert "Restore command succeeds" '[[ $exit_code -eq 0 ]]'
     assert "Source directory is restored" '[[ -d "$TEST_SOURCE" ]]'
     assert "File1 is restored" '[[ -f "${TEST_SOURCE}/file1.txt" ]]'
     assert "File2 is restored" '[[ -f "${TEST_SOURCE}/file2.txt" ]]'
@@ -161,7 +255,8 @@ test_backup_restore_missing() {
     setup
     
     cd "$TEST_DIR" || exit 1
-    local output=$("$LSM_TOOLKIT" backup restore "/nonexistent/backup.tar.gz" 2>&1)
+    local output
+    output=$("$LSM_TOOLKIT" backup restore "/nonexistent/backup.tar.gz" 2>&1)
     local exit_code=$?
     
     assert "Restore command fails with missing file" '[[ $exit_code -ne 0 ]]'
@@ -182,7 +277,8 @@ test_backup_restore_corrupted() {
     local fake_backup="${TEST_BACKUP_DIR}/corrupted.tar.gz"
     echo "This is not a valid tar archive" > "$fake_backup"
     
-    local output=$("$LSM_TOOLKIT" backup restore "$fake_backup" 2>&1)
+    local output
+    output=$("$LSM_TOOLKIT" backup restore "$fake_backup" 2>&1)
     local exit_code=$?
     
     assert "Restore command fails with corrupted file" '[[ $exit_code -ne 0 ]]'
@@ -199,9 +295,12 @@ main() {
     # Run all tests
     test_backup_help
     test_backup_create_valid
+    test_backup_create_incremental
+    test_backup_incremental_hardlinks
     test_backup_create_invalid
     test_backup_list
     test_backup_restore_valid
+    test_backup_restore_snapshot
     test_backup_restore_missing
     test_backup_restore_corrupted
     
