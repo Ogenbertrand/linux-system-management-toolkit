@@ -57,3 +57,46 @@ Total active sessions: 1
 - [x] Handle multiple simultaneous sessions
 - [x] Support optional filtering by username
 - [x] Use `who` or `w` command
+
+---
+
+### LSM Toolkit: User Group Audit (LSMT-007)
+
+This document describes the implementation of the User Group Audit feature.
+
+#### Overview
+The `users` module now supports auditing group memberships for all system users. This feature lists every user on the system along with the groups they belong to.
+
+#### Implementation Details
+- **File**: `modules/users.sh`
+- **Function**: `users_groups`
+- **Primary Tool**: `id` and `/etc/passwd` parsing
+- **Logic**: Iterates through `/etc/passwd` to find all users, then runs `id -nG` for each to resolve group names.
+
+#### How to Run
+
+**Audit User Groups:**
+```bash
+./bin/lsm-toolkit users groups
+```
+
+#### Expected Output
+```
+-----------------------------------------------
+LSM Toolkit: User Group Membership Audit
+-----------------------------------------------
+Username             | Groups
+-----------------------------------------------
+root                 | root
+daemon               | daemon
+bin                  | bin
+arthur               | arthur adm cdrom sudo dip plugdev lpadmin sambashare docker libvirt
+...
+-----------------------------------------------
+```
+
+#### Ticket Requirements (LSMT-007)
+- [x] List all groups per user
+- [x] Handle system and regular users
+- [x] Output in clear tabular format
+- [x] Use `/etc/group` or `id` command
