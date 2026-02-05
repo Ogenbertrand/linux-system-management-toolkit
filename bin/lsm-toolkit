@@ -17,6 +17,92 @@ C_B='\033[1m'        # Bold
 C_G='\033[0;32m'     # Green
 C_C='\033[0;36m'     # Cyan
 
+# --- LOGGING CONFIGURATION ---
+CONFIG_FILE="${BASE_DIR}/config/toolkit.conf"
+if [[ -f "$CONFIG_FILE" ]]; then
+    source "$CONFIG_FILE"
+fi
+
+# Set defaults
+LOG_DIR="${LOG_DIR:-${BASE_DIR}/logs}"
+LOG_FILE="${LOG_FILE:-${LOG_DIR}/toolkit.log}"
+LOG_LEVEL="${LOG_LEVEL:-INFO}"
+LOG_RETENTION_DAYS="${LOG_RETENTION_DAYS:-7}"
+LOG_ENABLED_MODULES="${LOG_ENABLED_MODULES:-all}"
+
+# Ensure log directory exists
+if [[ ! -d "$LOG_DIR" ]]; then
+    mkdir -p "$LOG_DIR"
+fi
+
+# Logging function
+_lsm_log() {
+    local level="$1"
+    local message="$2"
+    local module="${MODULE:-core}"
+
+    # Check if logging is enabled for this module
+    if [[ "$LOG_ENABLED_MODULES" != "all" && "$LOG_ENABLED_MODULES" != *"$module"* ]]; then
+        return
+    fi
+
+    # Check log level priority
+    local level_priority
+    local config_priority
+    
+    case "$level" in
+        ERROR) level_priority=1 ;;
+        WARN)  level_priority=2 ;;
+        INFO)  level_priority=3 ;;
+        DEBUG) level_priority=4 ;;
+        *)     level_priority=3 ;;
+    esac
+
+    case "$LOG_LEVEL" in
+        ERROR) config_priority=1 ;;
+        WARN)  config_priority=2 ;;
+        INFO)  config_priority=3 ;;
+        DEBUG) config_priority=4 ;;
+        *)     config_priority=3 ;;
+    esac
+
+    if [[ $level_priority -gt $config_priority ]]; then
+        return
+    fi
+
+    local timestamp=$(date "+%Y-%m-%d %H:%M:%S")
+    echo "[$timestamp] [$level] [$module] $message" >> "$LOG_FILE"
+}
+
+# Log rotation
+_lsm_rotate_logs() {
+    [[ ! -d "$LOG_DIR" ]] && return
+
+    # Archive current log if it's from a previous day
+    if [[ -f "$LOG_FILE" ]]; then
+        local log_date
+        log_date=$(date -r "$LOG_FILE" "+%Y-%m-%d" 2>/dev/null)
+        local current_date=$(date "+%Y-%m-%d")
+        
+        if [[ -n "$log_date" && "$log_date" != "$current_date" ]]; then
+            local archive_file="${LOG_FILE}.${log_date}"
+            mv "$LOG_FILE" "$archive_file"
+            if command -v gzip >/dev/null 2>&1; then
+                gzip "$archive_file"
+            fi
+        fi
+    fi
+
+    # Delete logs older than retention days
+    local log_filename=$(basename "$LOG_FILE")
+    find "$LOG_DIR" -name "${log_filename}.*" -type f -mtime +"$LOG_RETENTION_DAYS" -delete 2>/dev/null
+}
+
+# Perform log rotation on startup
+_lsm_rotate_logs
+
+# --- END LOGGING CONFIGURATION ---
+
 # Discover available modules by scanning modules/ directory
 _lsm_discover_modules() {
     local modules_dir="${BASE_DIR}/modules"
@@ -123,10 +209,12 @@ if [[ -f "$MODULE_PATH" ]]; then
     if declare -f "${MODULE}_${COMMAND}" > /dev/null; then
         "${MODULE}_${COMMAND}" "$@"
     else
+        _lsm_log "ERROR" "Command '$COMMAND' not found in module '$MODULE'"
         echo "Error: Command '$COMMAND' not found in module '$MODULE'"
         exit 1
     fi
 else
+    _lsm_log "ERROR" "Module '$MODULE' not found at $MODULE_PATH"
     echo "Error: Module '$MODULE' not found at $MODULE_PATH"
     exit 1
 fi
